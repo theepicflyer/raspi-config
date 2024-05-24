@@ -6,6 +6,7 @@
 INTERACTIVE=True
 ASK_TO_REBOOT=0
 BLACKLIST=/etc/modprobe.d/raspi-blacklist.conf
+OVERLAY_CMDLINE="overlayroot=tmpfs:recurse=0"
 
 if [ -e /boot/firmware/config.txt ] ; then
   FIRMWARE=/firmware
@@ -42,7 +43,12 @@ if is_pi ; then
   if [ -e /proc/device-tree/chosen/os_prefix ]; then
     PREFIX="$(cat /proc/device-tree/chosen/os_prefix)"
   fi
-  CMDLINE="/boot${FIRMWARE}/${PREFIX}cmdline.txt"
+
+  AB=$(mount | grep "/@root")
+  AB=${AB#*/@root}
+  AB=${AB:0:1}
+
+  CMDLINE="/boot${FIRMWARE}/${PREFIX}cmdline${AB}.txt"
 else
   CMDLINE=/proc/cmdline
 fi
@@ -3004,8 +3010,8 @@ enable_overlayfs() {
   fi
 
   # modify command line
-  if ! grep -q "overlayroot=tmpfs" $CMDLINE ; then
-    sed -i $CMDLINE -e "s/^/overlayroot=tmpfs /"
+  if ! grep -q $OVERLAY_CMDLINE $CMDLINE ; then
+    sed -i $CMDLINE -e "s/^/${OVERLAY_CMDLINE} /"
   fi
 
   if [ "$BOOTRO" = "yes" ] ; then
@@ -3028,7 +3034,7 @@ disable_overlayfs() {
   fi
 
   # modify command line
-  sed -i $CMDLINE -e "s/\(.*\)overlayroot=tmpfs \(.*\)/\1\2/"
+  sed -i $CMDLINE -e "s/\(.*\)${OVERLAY_CMDLINE} \(.*\)/\1\2/"
 
   if [ "$BOOTRO" = "yes" ] ; then
     if ! mount -o remount,ro /boot${FIRMWARE} 2>/dev/null ; then
