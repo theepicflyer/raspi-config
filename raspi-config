@@ -45,8 +45,7 @@ if is_pi ; then
   fi
 
   AB=$(mount | grep "/@root")
-  AB=${AB#*/@root}
-  AB=${AB:0:1}
+  AB=$(echo "$AB" | sed -E 's#.*/@root(.).*#\1#')
 
   CMDLINE="/boot${FIRMWARE}/${PREFIX}cmdline${AB}.txt"
 else
